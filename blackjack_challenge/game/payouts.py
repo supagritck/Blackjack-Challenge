@@ -50,15 +50,21 @@ def settle_hand(player: Player, player_hand: PlayerHand, dealer_hand: DealerHand
 def settle_side_bets(player: Player, player_hand: PlayerHand, side_bet_results: list) -> Decimal:
     """
     Apply side bet payouts.
-    side_bet_results: list of (bet_name, won: bool, wager: Decimal, multiplier: Decimal)
+    side_bet_results: list of (bet_name, won: bool, wager: Decimal, multiplier_or_flat: Decimal)
+    For Star Pairs: multiplier_or_flat is a profit multiplier (e.g. 5 → win 5x wager).
+    For Blazing 7s: multiplier_or_flat is a flat cash prize (e.g. 50 → win $50).
     Returns total net from side bets.
     """
     total = Decimal("0")
-    for bet_name, won, wager, multiplier in side_bet_results:
+    for bet_name, won, wager, multiplier_or_flat in side_bet_results:
         if won:
-            payout = wager + (wager * multiplier)
+            if bet_name.startswith("Blazing 7s"):
+                # Flat cash prize — not multiplied by wager
+                payout = wager + multiplier_or_flat
+            else:
+                payout = wager + (wager * multiplier_or_flat)
             player.add_winnings(payout)
-            total += wager * multiplier
+            total += payout - wager  # net profit
         else:
             total -= wager
     return total

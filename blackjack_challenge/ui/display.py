@@ -111,7 +111,11 @@ def print_side_bet_results(results: list):
     print(f"  {bold('Side Bets:')}")
     for name, won, wager, amount in results:
         if won:
-            print(f"    {cyan(name):<40}  {green(f'+${amount:,.2f}')}")
+            if name.startswith("Blazing 7s"):
+                net = amount  # flat cash prize
+            else:
+                net = wager * amount  # multiplier-based profit
+            print(f"    {cyan(name):<40}  {green(f'+${net:,.2f}')}")
         else:
             print(f"    {dim(name):<40}  {red(f'-${wager:,.2f}')}")
 
