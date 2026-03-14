@@ -1,5 +1,12 @@
 # Blackjack Challenge
 
+Hello friends! I have created this project just for fun because I would like to play Blackjack when I have travelled to Australia. I remember the rules of that and I found that they have pdf file that show how to play.
+
+Anyway, this is my first version of BJ game and I use Claude Code to create the prototype. I use python to create the game and it is look playable now.
+
+In the future, I will improve this project for more detail :D
+
+Project Details
 A feature-rich, terminal-based Blackjack game written in Python with custom casino rules, side bets, and special win conditions.
 
 ## Features
