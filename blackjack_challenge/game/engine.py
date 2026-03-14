@@ -22,6 +22,7 @@ class GameEngine:
         self.dealer = Dealer()
         self.shoe = Shoe(num_decks)
         self.jackpot_pool: Decimal = BLAZING_7S_JACKPOT_MIN
+        self.current_side_bet_results: list = []
 
     # ── Public entry point ────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ class GameEngine:
         # Phase 0 — Betting
         self.player.reset_hands()
         self.dealer.reset()
+        self.current_side_bet_results = []
 
         display.print_header(self.player, self.shoe.cards_remaining)
         wager = prompts.get_wager(self.player.balance)
@@ -74,6 +76,7 @@ class GameEngine:
         side_bet_results = evaluate_all_side_bets(hand, self.dealer.hand, self.jackpot_pool)
         if side_bet_results:
             settle_side_bets(self.player, hand, side_bet_results)
+            self.current_side_bet_results = side_bet_results
             display.print_side_bet_results(side_bet_results)
 
         # Phase 2 — Check player Blackjack (deal dealer 2nd card to verify)
@@ -83,6 +86,7 @@ class GameEngine:
             display.print_header(self.player, self.shoe.cards_remaining)
             display.print_dealer(self.dealer, hide_second=False)
             display.print_player_hands(self.player)
+            display.print_side_bet_results(self.current_side_bet_results)
             hand.mark_complete(OUTCOME_WIN_BJ)
             self._settle_and_show([hand])
             return
@@ -104,6 +108,7 @@ class GameEngine:
         display.print_header(self.player, self.shoe.cards_remaining)
         display.print_dealer(self.dealer, hide_second=False)
         display.print_player_hands(self.player)
+        display.print_side_bet_results(self.current_side_bet_results)
 
         # Phase 5 — Settlement
         self._settle_and_show(self.player.hands)
@@ -123,6 +128,7 @@ class GameEngine:
             display.print_header(self.player, self.shoe.cards_remaining)
             display.print_dealer(self.dealer, hide_second=True)
             display.print_player_hands(self.player, active_index=index)
+            display.print_side_bet_results(self.current_side_bet_results)
 
             actions = self._available_actions(hand)
             display.print_actions(actions)
