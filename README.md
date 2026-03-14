@@ -6,7 +6,7 @@ Anyway, this is my first version of BJ game and I use Claude Code to create the 
 
 In the future, I will improve this project for more detail :D
 
-Project Details
+## Project Details
 
 A feature-rich, terminal-based Blackjack game written in Python with custom casino rules, side bets, and special win conditions.
 
