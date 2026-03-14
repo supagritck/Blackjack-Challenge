@@ -43,8 +43,8 @@ class GameEngine:
 
         # Phase 0 — Reshuffle check
         if self.shoe.needs_shuffle():
-            display.print_message("Reshuffling the shoe...")
             self.shoe.reshuffle()
+            display.print_shuffle_notice(self.shoe.cards_remaining)
 
         # Phase 0 — Betting
         self.player.reset_hands()

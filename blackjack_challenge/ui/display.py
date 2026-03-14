@@ -120,6 +120,21 @@ def print_side_bet_results(results: list):
             print(f"    {dim(name):<40}  {red(f'-${wager:,.2f}')}")
 
 
+def print_shuffle_notice(new_card_count: int):
+    clear()
+    print(bold(THICK_DIV))
+    print(bold("              ♠ ♥ SHUFFLING SHOE ♦ ♣              "))
+    print(bold(THICK_DIV))
+    print()
+    print(f"  {yellow('The shoe was running low on cards.')}")
+    print(f"  All cards have been collected and reshuffled.")
+    print()
+    print(f"  New shoe: {green(f'{new_card_count} cards')} ready to play.")
+    print()
+    print(bold(DIVIDER))
+    input("  Press Enter to continue...")
+
+
 def print_message(msg: str):
     print(f"\n  {msg}\n")
 
