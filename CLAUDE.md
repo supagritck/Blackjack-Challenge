@@ -4,11 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Running the Game
 
+**Terminal (original):**
 ```bash
 python main.py
 ```
-
 Requires Python 3.10+. No external dependencies — pure stdlib only.
+
+**Web server:**
+```bash
+pip install -r requirements.txt
+uvicorn web.server:app --reload
+```
+Then open `http://localhost:8000`. API docs at `http://localhost:8000/docs`.
 
 ## Architecture Overview
 
@@ -51,3 +58,56 @@ Each round runs through these phases:
 ### Monetary Precision
 
 All balance and payout values use Python's `Decimal` type to avoid floating-point errors. Maintain this convention when adding any monetary logic.
+
+---
+
+## Web Migration (Branch: BJ-0.2)
+
+The game is being migrated to a FastAPI backend + HTML/CSS/JS frontend. The terminal game is untouched throughout — both coexist.
+
+### New files
+
+| File | Purpose |
+|---|---|
+| `blackjack_challenge/game/state.py` | `GamePhase` enum + `GameState`, `CardState`, `HandState`, `SideBetResult`, `RoundResult` dataclasses. The single JSON contract between backend and frontend. All monetary fields are Decimal-as-string. |
+| `blackjack_challenge/game/web_engine.py` | `WebGameEngine` — request-driven state machine. Three public methods: `start_round(wager, side_bets)`, `take_action("H"/"S"/"D"/"P")`, `get_state()`. Each returns a `GameState`. Shares `rules.py`, `payouts.py`, `side_bets.py` with the terminal engine. |
+| `web/session_store.py` | In-memory `session_id (UUID) → WebGameEngine` dict. One engine per browser session persists shoe + jackpot across rounds. |
+| `web/schemas.py` | Pydantic request (`NewGameRequest`, `PlaceBetRequest`, `ActionRequest`) and response (`GameStateResponse`) models. |
+| `web/server.py` | FastAPI app. Every endpoint returns `GameStateResponse`. |
+| `web/static/index.html` | Single-page app — setup screen + game table. |
+| `web/static/css/style.css` | Green felt table, CSS-only card rendering, responsive. |
+| `web/static/js/game.js` | Pure renderer — JS holds no game state, only re-renders from API response. |
+
+### API routes
+
+```
+GET  /                        serves index.html
+GET  /api/config              table limits (min_bet, max_bet, blazing_7s_entry, …)
+POST /api/new-game            create session → WAITING_FOR_BET state
+POST /api/place-bet           start round → post-deal state
+POST /api/action              H/S/D/P action → updated state
+GET  /api/state/{session_id}  read-only snapshot for page-refresh reconnection
+```
+
+### WebGameEngine phase flow
+
+```
+WAITING_FOR_BET  →  start_round()  →  PLAYER_TURN  (or ROUND_OVER if BJ)
+PLAYER_TURN      →  take_action()  →  PLAYER_TURN  (more hands)
+                                   →  ROUND_OVER   (all hands settled)
+                                   →  GAME_OVER    (balance = 0)
+ROUND_OVER       →  start_round()  →  (next round)
+```
+
+### Dealer hole card hiding
+
+During `PLAYER_TURN` the dealer has only 1 card. `_build_game_state(hide_hole=True)` renders the second slot as a face-down placeholder (`face_up: false`, all fields `null`). The actual card objects are never set to `face_up=False` — hiding is done at the serialization layer only.
+
+### Frontend design
+
+`game.js` is a pure renderer. The server is the sole source of truth — JS holds no game state. `render(state)` is called after every API response and redraws the entire UI from scratch. `localStorage` stores `bjSessionId` so the page can reconnect on refresh via `GET /api/state/{id}`.
+
+### What remains (Phases 5–6)
+
+- **Phase 5** — Source open-source SVG card deck and wire up image rendering in `game.js` (CSS fallback cards are already live)
+- **Phase 6** — Integration testing of all game paths, input hardening, GAME_OVER handling, reconnection polish, update CLAUDE.md
