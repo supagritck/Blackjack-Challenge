@@ -33,6 +33,13 @@ class Player:
     def __repr__(self) -> str:
         return f"Player({self.name}, balance=${self.balance:.2f}, hands={len(self.hands)})"
 
+    def to_dict(self) -> dict:
+        return {
+            "name":    self.name,
+            "balance": str(self.balance),
+            "hands":   [h.to_dict() for h in self.hands],
+        }
+
 
 class Dealer:
     def __init__(self):

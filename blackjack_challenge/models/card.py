@@ -91,3 +91,13 @@ class Card:
         if not self.face_up:
             return "[####]"
         return f"[{self.rank.value}{self.suit.symbol}]"
+
+    def to_dict(self) -> dict:
+        return {
+            "rank":        self.rank.value,
+            "suit":        self.suit.value,
+            "suit_symbol": self.suit.symbol,
+            "colour":      self.colour,
+            "face_up":     self.face_up,
+            "point_value": self.point_value,
+        }

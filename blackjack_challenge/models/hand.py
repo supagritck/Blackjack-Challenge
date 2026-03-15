@@ -133,6 +133,18 @@ class PlayerHand(Hand):
         self.is_complete = True
         self.outcome = outcome
 
+    def to_dict(self) -> dict:
+        return {
+            "cards":         [c.to_dict() for c in self.cards],
+            "total":         self.total(),
+            "wager":         str(self.wager),
+            "doubled":       self.doubled,
+            "is_split_hand": self.is_split_hand,
+            "is_complete":   self.is_complete,
+            "outcome":       self.outcome,
+            "side_bets":     {k: str(v) for k, v in self.side_bets.items()},
+        }
+
 
 class DealerHand(Hand):
     def must_hit(self) -> bool:
@@ -156,3 +168,32 @@ class DealerHand(Hand):
             total -= 10
             aces -= 1
         return total
+
+    def to_dict(self, hide_hole: bool = True) -> dict:
+        """
+        Serialize dealer hand. When hide_hole=True the second card (hole card)
+        is represented as a face-down placeholder — all identifying fields are None.
+        The total is computed only from visible cards in that case.
+        """
+        cards = []
+        for i, card in enumerate(self.cards):
+            if hide_hole and i == 1:
+                cards.append({
+                    "rank": None, "suit": None, "suit_symbol": None,
+                    "colour": None, "face_up": False, "point_value": None,
+                })
+            else:
+                cards.append(card.to_dict())
+
+        if hide_hole and len(self.cards) >= 2:
+            # Compute total from card[0] + any cards beyond index 1 (rare mid-round)
+            visible = [self.cards[0]] + self.cards[2:]
+            total = sum(c.point_value for c in visible)
+            aces = sum(1 for c in visible if c.is_ace)
+            while total > 21 and aces:
+                total -= 10
+                aces -= 1
+        else:
+            total = self.total()
+
+        return {"cards": cards, "total": total}
