@@ -4,20 +4,140 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blackjack Challenge</title>
-  <style>
-    body { margin: 0; background: #1a5c2a; color: #fff; font-family: sans-serif;
-           display: flex; align-items: center; justify-content: center; height: 100vh; }
-    .box { text-align: center; }
-    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    p  { color: #a8d5b0; }
-    a  { color: #f9d342; }
-  </style>
+  <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
-  <div class="box">
-    <h1>Blackjack Challenge</h1>
-    <p>Phase 3 backend is live. Frontend (Phase 4) coming next.</p>
-    <p>API docs: <a href="/docs">/docs</a></p>
+
+<!-- ── Setup Screen ──────────────────────────────────────────────────────── -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <h1>♠ Blackjack Challenge ♥</h1>
+    <p class="subtitle">Place your bets</p>
+    <form id="setup-form">
+      <div class="form-group">
+        <label for="player-name">Your Name</label>
+        <input id="player-name" type="text" maxlength="30" placeholder="Enter your name" required />
+      </div>
+      <div class="form-group">
+        <label for="starting-balance">Starting Balance ($)</label>
+        <input id="starting-balance" type="number" min="5" step="5" value="1000" required />
+      </div>
+      <div class="form-group">
+        <label for="num-decks">Number of Decks</label>
+        <select id="num-decks">
+          <option value="6">6 Decks</option>
+          <option value="8">8 Decks</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">
+        Sit Down
+      </button>
+    </form>
   </div>
+</div>
+
+<!-- ── Game Table ─────────────────────────────────────────────────────────── -->
+<div id="game-table" class="hidden">
+
+  <!-- Header bar -->
+  <div id="header">
+    <div class="hdr-item">
+      <span class="hdr-label">Player</span>
+      <span class="hdr-value" id="player-val">—</span>
+    </div>
+    <div class="hdr-item">
+      <span class="hdr-label">Balance</span>
+      <span class="hdr-value" id="balance-val">$0</span>
+    </div>
+    <div class="hdr-item">
+      <span class="hdr-label">Shoe</span>
+      <span class="hdr-value" id="shoe-val">—</span>
+    </div>
+    <div class="hdr-item">
+      <span class="hdr-label">Blazing 7s Jackpot</span>
+      <span class="hdr-value" id="jackpot-val">$0</span>
+    </div>
+  </div>
+
+  <!-- Shuffle notice -->
+  <div id="shuffle-notice" class="hidden">
+    ♻ Reshuffling — new shoe in play!
+  </div>
+
+  <!-- Dealer section -->
+  <div id="dealer-section">
+    <div class="section-label">Dealer</div>
+    <div id="dealer-cards" class="card-row"></div>
+    <div id="dealer-total" class="hidden"></div>
+  </div>
+
+  <!-- Side bet results -->
+  <div id="side-bet-panel" class="hidden"></div>
+
+  <!-- Player section -->
+  <div id="player-section">
+    <div class="section-label">Your Hand</div>
+    <div id="player-hands"></div>
+  </div>
+
+  <!-- Controls panel -->
+  <div id="controls-panel">
+
+    <!-- Bet controls (WAITING_FOR_BET) -->
+    <div id="bet-controls">
+      <div class="bet-group">
+        <label>Wager</label>
+        <div class="input-with-chips">
+          <button class="chip-btn" data-amount="5" type="button">$5</button>
+          <button class="chip-btn" data-amount="25" type="button">$25</button>
+          <button class="chip-btn" data-amount="100" type="button">$100</button>
+          <button class="chip-btn" data-amount="500" type="button">$500</button>
+          <input id="wager-input" class="bet-input" type="number" min="5" max="10000" step="5" value="25" />
+        </div>
+      </div>
+      <div class="bet-group">
+        <label>Star Pairs (optional)</label>
+        <input id="star-pairs-input" class="bet-input" type="number" min="0" max="500" step="5" value="0" placeholder="0" />
+      </div>
+      <div class="bet-group" style="justify-content:flex-end;">
+        <div class="b7-row">
+          <input id="blazing-7s-check" type="checkbox" />
+          <label for="blazing-7s-check">Blazing 7s ($2.50)</label>
+        </div>
+      </div>
+      <div class="bet-group" style="justify-content:flex-end;">
+        <button id="deal-btn" class="btn btn-primary" type="button">Deal</button>
+      </div>
+    </div>
+
+    <!-- Action buttons (PLAYER_TURN) -->
+    <div id="action-buttons" class="hidden">
+      <button class="btn btn-action" data-action="H" type="button">Hit</button>
+      <button class="btn btn-action" data-action="S" type="button">Stand</button>
+      <button class="btn btn-action" data-action="D" type="button">Double</button>
+      <button class="btn btn-action" data-action="P" type="button">Split</button>
+    </div>
+
+    <!-- Round results (ROUND_OVER) -->
+    <div id="round-results" class="hidden">
+      <div id="results-list"></div>
+      <button id="play-again-btn" class="btn btn-primary" type="button">Next Round</button>
+    </div>
+
+    <!-- Game over -->
+    <div id="game-over" class="hidden">
+      <h2>Game Over</h2>
+      <p>You finished with <strong id="game-over-balance">$0</strong></p>
+      <button id="new-game-btn" class="btn btn-primary" type="button">New Game</button>
+    </div>
+
+  </div><!-- /controls-panel -->
+
+</div><!-- /game-table -->
+
+<!-- Error toast -->
+<div id="error-toast" class="hidden"></div>
+
+<script src="/static/js/game.js"></script>
 </body>
 </html>
