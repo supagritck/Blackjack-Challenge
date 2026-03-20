@@ -263,27 +263,64 @@ function renderRoundResults(results) {
   }).join('');
 }
 
-// ── Card rendering (CSS-only, Phase 5.3 fallback) ─────────────────────────────
+// ── Card rendering ────────────────────────────────────────────────────────────
+
+/**
+ * Build a card element. Tries to load an SVG image from /static/cards/;
+ * if the file is missing (404) the onerror handler injects the CSS-only
+ * fallback so the game always renders correctly.
+ */
 function createCard(card) {
   const div = document.createElement('div');
+
   if (!card.face_up) {
     div.className = 'card face-down';
+    _tryCardImage(div, '/static/cards/back.svg', null);
     return div;
   }
+
   const colour = card.colour === 'Red' ? 'red' : 'black';
   div.className = `card ${colour}`;
-  div.innerHTML = `
-    <div class="card-corner top-left">
-      <div class="card-rank">${card.rank}</div>
-      <div class="card-suit-sm">${card.suit_symbol}</div>
-    </div>
-    <div class="card-suit-center">${card.suit_symbol}</div>
-    <div class="card-corner bottom-right">
-      <div class="card-rank">${card.rank}</div>
-      <div class="card-suit-sm">${card.suit_symbol}</div>
-    </div>
-  `;
+
+  _tryCardImage(div, cardImageSrc(card.rank, card.suit), () => {
+    // CSS fallback — rendered when SVG file is not present
+    div.innerHTML = `
+      <div class="card-corner top-left">
+        <div class="card-rank">${card.rank}</div>
+        <div class="card-suit-sm">${card.suit_symbol}</div>
+      </div>
+      <div class="card-suit-center">${card.suit_symbol}</div>
+      <div class="card-corner bottom-right">
+        <div class="card-rank">${card.rank}</div>
+        <div class="card-suit-sm">${card.suit_symbol}</div>
+      </div>
+    `;
+  });
+
   return div;
+}
+
+/** Append an <img> to container; call onFallback() if the image fails to load. */
+function _tryCardImage(container, src, onFallback) {
+  const img = document.createElement('img');
+  img.className = 'card-img';
+  img.src = src;
+  img.onerror = () => {
+    img.remove();
+    if (onFallback) onFallback();
+  };
+  container.appendChild(img);
+}
+
+/**
+ * Map backend rank/suit strings to the SVG filename convention used by
+ * htdebeer/SVGcards:  ace_of_spades.svg, 2_of_clubs.svg, jack_of_hearts.svg …
+ */
+function cardImageSrc(rank, suit) {
+  const rankMap = { 'A': 'ace', 'J': 'jack', 'Q': 'queen', 'K': 'king' };
+  const r = rankMap[rank] || rank;   // '2'–'10' pass through unchanged
+  const s = suit.toLowerCase();
+  return `/static/cards/${r}_of_${s}.svg`;
 }
 
 // ── Utility helpers ───────────────────────────────────────────────────────────

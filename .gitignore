@@ -17,3 +17,6 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Downloaded card assets (run scripts/download_cards.py to regenerate)
+web/static/cards/

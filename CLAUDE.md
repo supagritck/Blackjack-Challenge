@@ -101,13 +101,28 @@ ROUND_OVER       →  start_round()  →  (next round)
 
 ### Dealer hole card hiding
 
-During `PLAYER_TURN` the dealer has only 1 card. `_build_game_state(hide_hole=True)` renders the second slot as a face-down placeholder (`face_up: false`, all fields `null`). The actual card objects are never set to `face_up=False` — hiding is done at the serialization layer only.
+During `PLAYER_TURN` the dealer has only 1 card (hole card is not dealt until `_run_dealer_phase`). `_build_game_state(hide_hole=True)` would hide a second card if one existed, but in normal play there is only ever 1 dealer card during PLAYER_TURN.
 
 ### Frontend design
 
 `game.js` is a pure renderer. The server is the sole source of truth — JS holds no game state. `render(state)` is called after every API response and redraws the entire UI from scratch. `localStorage` stores `bjSessionId` so the page can reconnect on refresh via `GET /api/state/{id}`.
 
-### What remains (Phases 5–6)
+### SVG card deck (Phase 5)
 
-- **Phase 5** — Source open-source SVG card deck and wire up image rendering in `game.js` (CSS fallback cards are already live)
-- **Phase 6** — Integration testing of all game paths, input hardening, GAME_OVER handling, reconnection polish, update CLAUDE.md
+Card images are served from `/static/cards/`. Run the download script once to populate them:
+
+```bash
+python scripts/download_cards.py
+```
+
+Source: `htdebeer/SVGcards` (MIT licence) — `ace_of_spades.svg`, `2_of_clubs.svg`, etc.
+`game.js:createCard()` tries the SVG image first; `onerror` falls back to CSS-only rendering so the game is always playable.
+
+### Integration tests (Phase 6)
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/test_api.py -v
+```
+
+49 tests covering: all API endpoints, all error/validation cases, full round flow, GAME_OVER, reconnection, shoe depletion, side bets. Uses `fastapi.testclient.TestClient` (no server required).

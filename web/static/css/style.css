@@ -224,6 +224,15 @@ body {
   font-size: 26px;
 }
 
+/* SVG card image — fills the card div; hidden until loaded */
+.card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  border-radius: 5px;
+  display: block;
+}
+
 /* Face-down card — blue crosshatch pattern */
 .card.face-down {
   background:
