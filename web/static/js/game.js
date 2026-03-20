@@ -139,6 +139,7 @@ function render(state) {
   localStorage.setItem('bjSessionId', sessionId);
 
   renderHeader(state);
+  renderStats(state);
   renderShuffleNotice(state);
   renderDealer(state);
   renderSideBetResults(state);
@@ -170,6 +171,44 @@ function renderHeader(state) {
   document.getElementById('balance-val').textContent = `$${state.balance}`;
   document.getElementById('shoe-val').textContent    = state.shoe_remaining;
   document.getElementById('jackpot-val').textContent = `$${state.jackpot_pool}`;
+}
+
+function renderStats(state) {
+  const s = state.session_stats;
+
+  document.getElementById('stat-hands').textContent = s.hands_played;
+
+  document.getElementById('stat-wl').textContent = `${s.hands_won} / ${s.hands_lost}`;
+
+  const pct = s.hands_played > 0
+    ? Math.round((s.hands_won / s.hands_played) * 100) + '%'
+    : '—';
+  document.getElementById('stat-winpct').textContent = pct;
+
+  const streakEl = document.getElementById('stat-streak');
+  if (s.current_streak > 0) {
+    streakEl.textContent = `Win x${s.current_streak}`;
+    streakEl.className = 'stat-value positive';
+  } else if (s.current_streak < 0) {
+    streakEl.textContent = `Loss x${Math.abs(s.current_streak)}`;
+    streakEl.className = 'stat-value negative';
+  } else {
+    streakEl.textContent = '—';
+    streakEl.className = 'stat-value neutral';
+  }
+
+  const pnl    = parseFloat(s.net_pnl);
+  const pnlEl  = document.getElementById('stat-pnl');
+  const sign   = pnl >= 0 ? '+' : '';
+  pnlEl.textContent = `${sign}$${s.net_pnl}`;
+  pnlEl.className   = `stat-value ${pnl > 0 ? 'positive' : pnl < 0 ? 'negative' : 'neutral'}`;
+
+  const best    = parseFloat(s.best_hand);
+  const bestEl  = document.getElementById('stat-best');
+  bestEl.textContent = best > 0 ? `+$${s.best_hand}` : '—';
+  bestEl.className   = `stat-value ${best > 0 ? 'positive' : 'neutral'}`;
+
+  document.getElementById('stat-special').textContent = `${s.blackjacks} / ${s.five_card_tricks}`;
 }
 
 function renderShuffleNotice(state) {

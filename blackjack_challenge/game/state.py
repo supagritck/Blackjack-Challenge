@@ -70,7 +70,7 @@ class SideBetResult:
     name:   str   # e.g. "Star Pairs [Suited Pair]"
     won:    bool
     wager:  str   # Decimal as string
-    payout: str   # Decimal as string — multiplier amount or flat cash
+    payout: str   # Decimal as string — net cash profit (wager × multiplier for Star Pairs, flat prize for Blazing 7s)
 
     def to_dict(self) -> dict:
         return {
@@ -97,6 +97,31 @@ class RoundResult:
 
 
 @dataclass
+class SessionStats:
+    """Running statistics for the current session (persists across rounds)."""
+    hands_played:     int
+    hands_won:        int
+    hands_lost:       int
+    blackjacks:       int
+    five_card_tricks: int
+    best_hand:        str   # Decimal as string — highest single-hand net profit
+    net_pnl:          str   # Decimal as string — current balance minus starting balance
+    current_streak:   int   # +N = win streak, -N = loss streak, 0 = neutral
+
+    def to_dict(self) -> dict:
+        return {
+            "hands_played":     self.hands_played,
+            "hands_won":        self.hands_won,
+            "hands_lost":       self.hands_lost,
+            "blackjacks":       self.blackjacks,
+            "five_card_tricks": self.five_card_tricks,
+            "best_hand":        self.best_hand,
+            "net_pnl":          self.net_pnl,
+            "current_streak":   self.current_streak,
+        }
+
+
+@dataclass
 class GameState:
     """
     Complete serializable snapshot of the game at any point.
@@ -117,6 +142,7 @@ class GameState:
     shoe_remaining:     int
     jackpot_pool:       str                         # Decimal as string
     shuffle_notice:     bool                        # True for the first state after a reshuffle
+    session_stats:      SessionStats
 
     def to_dict(self) -> dict:
         return {
@@ -134,4 +160,5 @@ class GameState:
             "shoe_remaining":    self.shoe_remaining,
             "jackpot_pool":      self.jackpot_pool,
             "shuffle_notice":    self.shuffle_notice,
+            "session_stats":     self.session_stats.to_dict(),
         }

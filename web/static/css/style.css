@@ -128,6 +128,45 @@ body {
 #balance-val  { color: #FFD700; font-size: 1.05rem; }
 #jackpot-val  { color: #ff9f43; }
 
+/* ── Session Stats Bar ────────────────────────────────────────────────────── */
+#stats-bar {
+  display: flex;
+  gap: 0;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.3rem 1rem;
+  gap: 1px;
+  flex: 1;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  min-width: 70px;
+}
+
+.stat-item:last-child { border-right: none; }
+
+.stat-label {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.stat-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #c8e6d0;
+}
+
+.stat-value.positive { color: #4ade80; }
+.stat-value.negative { color: #f87171; }
+.stat-value.neutral  { color: #c8e6d0; }
+
 /* ── Shuffle Notice ───────────────────────────────────────────────────────── */
 #shuffle-notice {
   background: #7c3c0a;
@@ -499,6 +538,8 @@ body {
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
+  .stat-item { padding: 0.25rem 0.5rem; min-width: 55px; }
+  .stat-value { font-size: 0.75rem; }
   .card { width: 56px; height: 80px; }
   .card-suit-center { font-size: 20px; }
   .card-rank { font-size: 11px; }

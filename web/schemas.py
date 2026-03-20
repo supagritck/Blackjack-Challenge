@@ -65,6 +65,17 @@ class RoundResultResponse(BaseModel):
     net:     str   # net change to balance (positive = profit)
 
 
+class SessionStatsResponse(BaseModel):
+    hands_played:     int
+    hands_won:        int
+    hands_lost:       int
+    blackjacks:       int
+    five_card_tricks: int
+    best_hand:        str   # Decimal as string
+    net_pnl:          str   # Decimal as string
+    current_streak:   int   # +N win streak, -N loss streak, 0 neutral
+
+
 class GameStateResponse(BaseModel):
     session_id:        str
     phase:             str   # GamePhase.value string
@@ -80,3 +91,4 @@ class GameStateResponse(BaseModel):
     shoe_remaining:    int
     jackpot_pool:      str
     shuffle_notice:    bool
+    session_stats:     SessionStatsResponse

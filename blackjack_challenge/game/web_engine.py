@@ -20,6 +20,7 @@ from blackjack_challenge.game.payouts import settle_hand, settle_side_bets
 from blackjack_challenge.game.side_bets import evaluate_all_side_bets
 from blackjack_challenge.game.state import (
     GameState, GamePhase, CardState, HandState, SideBetResult, RoundResult,
+    SessionStats,
 )
 from blackjack_challenge.config import BLAZING_7S_JACKPOT_MIN
 
@@ -48,6 +49,16 @@ class WebGameEngine:
         self._side_bet_results: Optional[List[SideBetResult]] = None
         self._round_results: Optional[List[RoundResult]] = None
         self._shuffle_notice: bool = False
+
+        # Session stats — persists across all rounds
+        self._starting_balance: Decimal = player.balance
+        self._hands_played:     int = 0
+        self._hands_won:        int = 0
+        self._hands_lost:       int = 0
+        self._blackjacks:       int = 0
+        self._five_card_tricks: int = 0
+        self._best_hand:        Decimal = Decimal("0")
+        self._current_streak:   int = 0
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -81,11 +92,6 @@ class WebGameEngine:
         self._round_results = None
         self._shuffle_notice = False
 
-        # ── Phase 0: Reshuffle check ──────────────────────────────────────────
-        if self.shoe.needs_shuffle():
-            self.shoe.reshuffle()
-            self._shuffle_notice = True
-
         # ── Validate funds ────────────────────────────────────────────────────
         side_bet_total = sum(side_bets.values(), Decimal("0"))
         if wager > self.player.balance:
@@ -107,7 +113,14 @@ class WebGameEngine:
         raw = evaluate_all_side_bets(hand, self.dealer.hand, self.jackpot_pool)
         settle_side_bets(self.player, hand, raw)
         self._side_bet_results = [
-            SideBetResult(name=n, won=w, wager=str(wr), payout=str(p))
+            SideBetResult(
+                name=n, won=w, wager=str(wr),
+                payout=str(
+                    # Blazing 7s: p is a flat cash prize (net profit = p)
+                    # Star Pairs: p is a multiplier (net profit = wager × multiplier)
+                    p if n.startswith("Blazing 7s") else wr * p
+                ),
+            )
             for n, w, wr, p in raw
         ]
 
@@ -117,6 +130,7 @@ class WebGameEngine:
             self.dealer.hand.add_card(self.shoe.deal())
             hand.mark_complete(OUTCOME_WIN_BJ)
             self._settle_all()
+            self._check_reshuffle()
             self.active_hand_index = None
             self.phase = (
                 GamePhase.GAME_OVER if self.player.balance <= 0
@@ -222,11 +236,18 @@ class WebGameEngine:
             self.dealer.play_hand(self.shoe)
 
         self._settle_all()
+        self._check_reshuffle()
         self.active_hand_index = None
         self.phase = (
             GamePhase.GAME_OVER if self.player.balance <= 0
             else GamePhase.ROUND_OVER
         )
+
+    def _check_reshuffle(self):
+        """Reshuffle the shoe if the threshold is reached. Called at round end."""
+        if self.shoe.needs_shuffle():
+            self.shoe.reshuffle()
+            self._shuffle_notice = True
 
     def _settle_all(self):
         """Settle every player hand and store the RoundResult list."""
@@ -240,6 +261,40 @@ class WebGameEngine:
                 net=str(net),
             ))
         self._round_results = results
+        self._update_stats()
+
+    def _update_stats(self):
+        """Update running session stats from the just-completed round results."""
+        if not self._round_results:
+            return
+
+        win_outcomes = {"WIN", "BLACKJACK", "FIVE CARD TRICK", "21 - AUTO WIN"}
+        round_net = Decimal("0")
+
+        for result in self._round_results:
+            net = Decimal(result.net)
+            round_net += net
+            self._hands_played += 1
+
+            if result.outcome in win_outcomes:
+                self._hands_won += 1
+            elif result.outcome == "LOSE":
+                self._hands_lost += 1
+
+            if result.outcome == "BLACKJACK":
+                self._blackjacks += 1
+            elif result.outcome == "FIVE CARD TRICK":
+                self._five_card_tricks += 1
+
+            if net > self._best_hand:
+                self._best_hand = net
+
+        # Streak is per round (aggregate net), not per individual hand
+        if round_net > 0:
+            self._current_streak = self._current_streak + 1 if self._current_streak > 0 else 1
+        elif round_net < 0:
+            self._current_streak = self._current_streak - 1 if self._current_streak < 0 else -1
+        # round_net == 0: leave streak unchanged
 
     # ── Player action helpers (mirrors engine.py exactly) ─────────────────────
 
@@ -347,6 +402,8 @@ class WebGameEngine:
                 self.player.hands[self.active_hand_index]
             )
 
+        net_pnl = self.player.balance - self._starting_balance
+
         state = GameState(
             session_id=self._session_id,
             phase=self.phase,
@@ -362,6 +419,16 @@ class WebGameEngine:
             shoe_remaining=self.shoe.cards_remaining,
             jackpot_pool=str(self.jackpot_pool),
             shuffle_notice=self._shuffle_notice,
+            session_stats=SessionStats(
+                hands_played=self._hands_played,
+                hands_won=self._hands_won,
+                hands_lost=self._hands_lost,
+                blackjacks=self._blackjacks,
+                five_card_tricks=self._five_card_tricks,
+                best_hand=str(self._best_hand),
+                net_pnl=str(net_pnl),
+                current_streak=self._current_streak,
+            ),
         )
 
         # One-shot: clear after the first state read so it doesn't repeat
